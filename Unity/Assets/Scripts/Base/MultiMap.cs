@@ -1,17 +1,18 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
-namespace Model
+namespace ETModel
 {
 	public class MultiMap<T, K>
 	{
 		private readonly SortedDictionary<T, List<K>> dictionary = new SortedDictionary<T, List<K>>();
 
-		public SortedDictionary<T, List<K>>.KeyCollection Keys
+		// 重用list
+		private readonly Queue<List<K>> queue = new Queue<List<K>>();
+
+		public SortedDictionary<T, List<K>> GetDictionary()
 		{
-			get
-			{
-				return this.dictionary.Keys;
-			}
+			return this.dictionary;
 		}
 
 		public void Add(T t, K k)
@@ -20,10 +21,45 @@ namespace Model
 			this.dictionary.TryGetValue(t, out list);
 			if (list == null)
 			{
-				list = new List<K>();
+				list = this.FetchList();
 			}
 			list.Add(k);
 			this.dictionary[t] = list;
+		}
+
+		public KeyValuePair<T, List<K>> First()
+		{
+			return this.dictionary.First();
+		}
+
+		public int Count
+		{
+			get
+			{
+				return this.dictionary.Count;
+			}
+		}
+
+		private List<K> FetchList()
+		{
+			if (this.queue.Count > 0)
+			{
+				List<K> list = this.queue.Dequeue();
+				list.Clear();
+				return list;
+			}
+			return new List<K>();
+		}
+
+		private void RecycleList(List<K> list)
+		{
+			// 防止暴涨
+			if (this.queue.Count > 100)
+			{
+				return;
+			}
+			list.Clear();
+			this.queue.Enqueue(list);
 		}
 
 		public bool Remove(T t, K k)
@@ -40,6 +76,7 @@ namespace Model
 			}
 			if (list.Count == 0)
 			{
+				this.RecycleList(list);
 				this.dictionary.Remove(t);
 			}
 			return true;
@@ -47,6 +84,12 @@ namespace Model
 
 		public bool Remove(T t)
 		{
+			List<K> list = null;
+			this.dictionary.TryGetValue(t, out list);
+			if (list != null)
+			{
+				this.RecycleList(list);
+			}
 			return this.dictionary.Remove(t);
 		}
 
@@ -85,7 +128,7 @@ namespace Model
 		{
 			List<K> list;
 			this.dictionary.TryGetValue(t, out list);
-			if ((list != null) && (list.Count > 0))
+			if (list != null && list.Count > 0)
 			{
 				return list[0];
 			}
@@ -101,6 +144,11 @@ namespace Model
 				return false;
 			}
 			return list.Contains(k);
+		}
+
+		public bool ContainsKey(T t)
+		{
+			return this.dictionary.ContainsKey(t);
 		}
 	}
 }

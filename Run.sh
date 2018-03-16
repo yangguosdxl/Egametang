@@ -7,8 +7,8 @@ then
     exit 9
 fi
 
-xbuild ./Server/Server.sln
-cd netcoreapp2.0
+dotnet msbuild ./Server/Server.sln
+cd Bin
 cmake ..
 make
 

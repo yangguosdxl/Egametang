@@ -1,37 +1,35 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
 
-namespace Hotfix
+namespace ETHotfix
 {
 	public abstract class Component : Disposer
 	{
+		public long Id { get; set; }
+
 		[BsonIgnore]
-		public Entity Entity { get; set; }
+		public Component Parent { get; set; }
 
-		public T GetEntity<T>() where T : Entity
+		public T GetParent<T>() where T : Component
 		{
-			return this.Entity as T;
+			return this.Parent as T;
 		}
 
-		protected Component()
+		public Entity Entity
 		{
-			this.Id = 1;
+			get
+			{
+				return this.Parent as Entity;
+			}
 		}
-
-		public T GetComponent<T>() where T : Component
-		{
-			return this.Entity.GetComponent<T>();
-		}
-
+		
 		public override void Dispose()
 		{
-			if (this.Id == 0)
+			if (this.IsDisposed)
 			{
 				return;
 			}
 
 			base.Dispose();
-
-			this.Entity?.RemoveComponent(this.GetType());
 		}
 	}
 }

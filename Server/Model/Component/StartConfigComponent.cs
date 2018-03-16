@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Model
+namespace ETModel
 {
-	[ObjectEvent]
-	public class StartConfigComponentEvent : ObjectEvent<StartConfigComponent>, IAwake<string, int>
+	[ObjectSystem]
+	public class StartConfigComponentSystem : AwakeSystem<StartConfigComponent, string, int>
 	{
-		public void Awake(string a, int b)
+		public override void Awake(StartConfigComponent self, string a, int b)
 		{
-			this.Get().Awake(a, b);
+			self.Awake(a, b);
 		}
 	}
 	
@@ -74,9 +74,9 @@ namespace Model
 						this.GateConfigs.Add(startConfig);
 					}
 				}
-				catch (Exception)
+				catch (Exception e)
 				{
-					Log.Error($"config错误: {s2}");
+					Log.Error($"config错误: {s2} {e}");
 				}
 			}
 

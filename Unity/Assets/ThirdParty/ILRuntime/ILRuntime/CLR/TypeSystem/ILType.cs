@@ -30,7 +30,8 @@ namespace ILRuntime.CLR.TypeSystem
         int fieldStartIdx = -1;
         int totalFieldCnt = -1;
         KeyValuePair<string, IType>[] genericArguments;
-        IType baseType, byRefType, arrayType, enumType, elementType;
+        IType baseType, byRefType, enumType, elementType;
+        Dictionary<int, IType> arrayTypes;
         Type arrayCLRType, byRefCLRType;
         IType[] interfaces;
         bool baseTypeInitialized = false;
@@ -255,6 +256,11 @@ namespace ILRuntime.CLR.TypeSystem
             get; private set;
         }
 
+        public int ArrayRank
+        {
+            get; private set;
+        }
+
         private bool? isValueType;
 
         public bool IsValueType
@@ -278,25 +284,30 @@ namespace ILRuntime.CLR.TypeSystem
             }
         }
 
+        public bool IsPrimitive
+        {
+            get { return false; }
+        }
+
         public Type TypeForCLR
         {
             get
             {
                 if (!baseTypeInitialized)
                     InitializeBaseType();
-                if (definition.IsEnum)
-                {
-                    if (enumType == null)
-                        InitializeFields();
-                    return enumType.TypeForCLR;
-                }
-                else if (typeRef is ArrayType)
+                if (typeRef is ArrayType)
                 {
                     return arrayCLRType;
                 }
                 else if (typeRef is ByReferenceType)
                 {
                     return byRefCLRType;
+                }
+                else if (definition.IsEnum)
+                {
+                    if (enumType == null)
+                        InitializeFields();
+                    return enumType.TypeForCLR;
                 }
                 else if (FirstCLRBaseType != null && FirstCLRBaseType is CrossBindingAdaptor)
                 {
@@ -332,7 +343,7 @@ namespace ILRuntime.CLR.TypeSystem
         {
             get
             {
-                return arrayType;
+                return arrayTypes != null ? arrayTypes[1] : null;
             }
         }
 
@@ -505,7 +516,7 @@ namespace ILRuntime.CLR.TypeSystem
             return null;
         }
 
-        public IMethod GetMethod(string name, int paramCount)
+        public IMethod GetMethod(string name, int paramCount, bool declaredOnly = false)
         {
             if (methods == null)
                 InitializeMethods();
@@ -518,7 +529,16 @@ namespace ILRuntime.CLR.TypeSystem
                         return i;
                 }
             }
-            return null;
+            if (declaredOnly)
+                return null;
+            else
+            {
+                //skip clr base type, this doesn't make any sense
+                if (BaseType != null && !(BaseType is CrossBindingAdaptor))
+                    return BaseType.GetMethod(name, paramCount, false);
+                else
+                    return null;
+            }
         }
 
         void InitializeMethods()
@@ -543,7 +563,7 @@ namespace ILRuntime.CLR.TypeSystem
                         methods[i.Name] = lst;
                     }
                     var m = new ILMethod(i, this, appdomain);
-                    lst.Add(new ILMethod(i, this, appdomain));
+                    lst.Add(m);
                 }
             }
 
@@ -568,7 +588,7 @@ namespace ILRuntime.CLR.TypeSystem
                 }
             }
 
-            var m = GetMethod(method.Name, method.Parameters, genericArguments, method.ReturnType);
+            var m = GetMethod(method.Name, method.Parameters, genericArguments, method.ReturnType, true);
             if (m == null)
             {
                 if (BaseType != null)
@@ -584,7 +604,7 @@ namespace ILRuntime.CLR.TypeSystem
                 return method;
         }
 
-        public IMethod GetMethod(string name, List<IType> param, IType[] genericArguments, IType returnType = null)
+        public IMethod GetMethod(string name, List<IType> param, IType[] genericArguments, IType returnType = null, bool declaredOnly = false)
         {
             if (methods == null)
                 InitializeMethods();
@@ -632,7 +652,15 @@ namespace ILRuntime.CLR.TypeSystem
                 lst.Add((ILMethod)m);
                 return m;
             }
-            return null;
+            if (declaredOnly)
+                return null;
+            else
+            {
+                if (BaseType != null)
+                    return BaseType.GetMethod(name, param, genericArguments, returnType, false);
+                else
+                    return null;
+            }
         }
 
         bool CheckGenericArguments(ILMethod i, IType[] genericArguments)
@@ -947,17 +975,21 @@ namespace ILRuntime.CLR.TypeSystem
             return byRefType;
         }
 
-        public IType MakeArrayType()
+        public IType MakeArrayType(int rank)
         {
-            if (arrayType == null)
+            if (arrayTypes == null)
+                arrayTypes = new Dictionary<int, IType>();
+            IType atype;
+            if(!arrayTypes.TryGetValue(rank, out atype))
             {
-                var def = new ArrayType(typeRef);
-                arrayType = new ILType(def, appdomain);
-                ((ILType)arrayType).IsArray = true;
-                ((ILType)arrayType).elementType = this;
-                ((ILType)arrayType).arrayCLRType = this.TypeForCLR.MakeArrayType();
+                var def = new ArrayType(typeRef, rank);
+                atype = new ILType(def, appdomain);
+                ((ILType)atype).IsArray = true;
+                ((ILType)atype).elementType = this;
+                ((ILType)atype).arrayCLRType = rank > 1 ? this.TypeForCLR.MakeArrayType(rank) : this.TypeForCLR.MakeArrayType();
+                arrayTypes[rank] = atype;
             }
-            return arrayType;
+            return atype;
         }
 
         public IType ResolveGenericType(IType contextType)
@@ -1001,6 +1033,11 @@ namespace ILRuntime.CLR.TypeSystem
             if (hashCode == -1)
                 hashCode = System.Threading.Interlocked.Add(ref instance_id, 1);
             return hashCode;
+        }
+
+        public override string ToString()
+        {
+            return FullName;
         }
     }
 }

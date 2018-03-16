@@ -1,29 +1,36 @@
 ﻿using System;
-using Model;
+using ETModel;
 using UnityEngine;
 
-namespace Hotfix
+namespace ETHotfix
 {
-    [UIFactory((int)UIType.Login)]
+    [UIFactory(UIType.UILogin)]
     public class UILoginFactory : IUIFactory
     {
-        public UI Create(Scene scene, UIType type, GameObject gameObject)
+        public UI Create(Scene scene, string type, GameObject gameObject)
         {
 	        try
 	        {
-				GameObject bundleGameObject = ((GameObject)Resources.Load("UI")).Get<GameObject>("UILogin");
-				GameObject lobby = UnityEngine.Object.Instantiate(bundleGameObject);
-				lobby.layer = LayerMask.NameToLayer(LayerNames.UI);
-				UI ui = new UI(scene, type, null, lobby);
+				ResourcesComponent resourcesComponent = ETModel.Game.Scene.GetComponent<ResourcesComponent>();
+				resourcesComponent.LoadBundle($"{type}.unity3d");
+				GameObject bundleGameObject = (GameObject)resourcesComponent.GetAsset($"{type}.unity3d", $"{type}");
+				GameObject login = UnityEngine.Object.Instantiate(bundleGameObject);
+				login.layer = LayerMask.NameToLayer(LayerNames.UI);
+		        UI ui = ComponentFactory.Create<UI, GameObject>(login);
 
 				ui.AddComponent<UILoginComponent>();
 				return ui;
 	        }
 	        catch (Exception e)
 	        {
-				Log.Error(e.ToStr());
+				Log.Error(e.ToString());
 		        return null;
 	        }
 		}
+
+	    public void Remove(string type)
+	    {
+			ETModel.Game.Scene.GetComponent<ResourcesComponent>().UnloadBundle($"{type}.unity3d");
+	    }
     }
 }

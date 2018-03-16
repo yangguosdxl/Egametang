@@ -1,39 +1,41 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
 
-namespace Model
+namespace ETModel
 {
 	[BsonIgnoreExtraElements]
-	[BsonKnownTypes(typeof(AConfigComponent))]
-	public abstract class Component: Disposer
+	public abstract partial class Component: Disposer
 	{
+		[BsonIgnoreIfDefault]
+		[BsonDefaultValue(0L)]
+		[BsonElement]
+		[BsonId]
+		public long Id { get; set; }
+
 		[BsonIgnore]
-		public Entity Entity { get; set; }
+		public Component Parent { get; set; }
 
-		public T GetEntity<T>() where T : Entity
+		public T GetParent<T>() where T : Component
 		{
-			return this.Entity as T;
+			return this.Parent as T;
 		}
 
-		protected Component()
+		[BsonIgnore]
+		public Entity Entity
 		{
-			this.Id = 1;
-		}
-		
-		public T GetComponent<T>() where T : Component
-		{
-			return this.Entity.GetComponent<T>();
+			get
+			{
+				return this.Parent as Entity;
+			}
 		}
 
 		public override void Dispose()
 		{
-			if (this.Id == 0)
+			if (this.IsDisposed)
 			{
 				return;
 			}
 
 			base.Dispose();
-
-			this.Entity?.RemoveComponent(this.GetType());
 		}
 	}
 }

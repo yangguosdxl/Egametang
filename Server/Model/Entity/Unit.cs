@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
+using MongoDB.Bson.Serialization.Attributes;
 
-namespace Model
+namespace ETModel
 {
 	public enum UnitType
 	{
@@ -8,19 +9,20 @@ namespace Model
 		Npc
 	}
 
-	[ObjectEvent]
-	public class UnitEvent : ObjectEvent<Unit>, IAwake<UnitType>
+	[ObjectSystem]
+	public class UnitSystem : AwakeSystem<Unit, UnitType>
 	{
-		public void Awake(UnitType unitType)
+		public override void Awake(Unit self, UnitType a)
 		{
-			this.Get().Awake(unitType);
+			self.Awake(a);
 		}
 	}
 
 	public sealed class Unit: Entity
 	{
 		public UnitType UnitType { get; private set; }
-
+		
+		[BsonIgnore]
 		public Vector3 Position { get; set; }
 		
 		public void Awake(UnitType unitType)
@@ -30,7 +32,7 @@ namespace Model
 
 		public override void Dispose()
 		{
-			if (this.Id == 0)
+			if (this.IsDisposed)
 			{
 				return;
 			}

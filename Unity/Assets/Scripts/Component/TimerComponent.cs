@@ -1,27 +1,26 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Model;
 
-namespace Model
+namespace ETModel
 {
-	public class Timer
+	public struct Timer
 	{
 		public long Id { get; set; }
 		public long Time { get; set; }
 		public TaskCompletionSource<bool> tcs;
 	}
 
-	[ObjectEvent]
-	public class TimerComponentEvent : ObjectEvent<TimerComponent>, IUpdate
+	[ObjectSystem]
+	public class TimerComponentUpdateSystem : UpdateSystem<TimerComponent>
 	{
-		public void Update()
+		public override void Update(TimerComponent self)
 		{
-			this.Get().Update();
+			self.Update();
 		}
 	}
 
-	public class TimerComponent: Component, IUpdate
+	public class TimerComponent : Component
 	{
 		private readonly Dictionary<long, Timer> timers = new Dictionary<long, Timer>();
 
@@ -30,24 +29,29 @@ namespace Model
 		/// </summary>
 		private readonly MultiMap<long, long> timeId = new MultiMap<long, long>();
 
-		private readonly EQueue<long> timeoutTimer = new EQueue<long>();
+		private readonly List<long> timeOutId = new List<long>();
 
 		public void Update()
 		{
 			long timeNow = TimeHelper.Now();
-			foreach (long time in this.timeId.Keys)
+
+			while (true)
 			{
-				if (time > timeNow)
+				if (this.timeId.Count <= 0)
+				{
+					return;
+				}
+				var kv = this.timeId.First();
+				if (kv.Key > timeNow)
 				{
 					break;
 				}
-				this.timeoutTimer.Enqueue(time);
-			}
 
-			while (this.timeoutTimer.Count > 0)
-			{
-				long key = this.timeoutTimer.Dequeue();
-				long[] timeOutId = this.timeId.GetAll(key);
+				timeOutId.Clear();
+				timeOutId.AddRange(kv.Value);
+
+				this.timeId.Remove(kv.Key);
+				
 				foreach (long id in timeOutId)
 				{
 					Timer timer;
@@ -55,9 +59,9 @@ namespace Model
 					{
 						continue;
 					}
-					this.Remove(id);
+					this.timers.Remove(id);
 					timer.tcs.SetResult(true);
-				}
+				}				
 			}
 		}
 
@@ -69,7 +73,6 @@ namespace Model
 				return;
 			}
 			this.timers.Remove(id);
-			this.timeId.Remove(timer.Time, timer.Id);
 		}
 
 		public Task WaitTillAsync(long tillTime, CancellationToken cancellationToken)

@@ -42,14 +42,14 @@ namespace ILRuntime.Runtime.Enviorment
 
         #region IType Members
 
-        public IMethod GetMethod(string name, int paramCount)
+        public IMethod GetMethod(string name, int paramCount, bool declaredOnly = false)
         {
-            return type.GetMethod(name, paramCount);
+            return type.GetMethod(name, paramCount, declaredOnly);
         }
 
-        public IMethod GetMethod(string name, List<IType> param, IType[] genericArguments, IType returnType = null)
+        public IMethod GetMethod(string name, List<IType> param, IType[] genericArguments, IType returnType = null, bool declaredOnly = false)
         {
-            return type.GetMethod(name, param, genericArguments, returnType);
+            return type.GetMethod(name, param, genericArguments, returnType, declaredOnly);
         }
 
         public List<IMethod> GetMethods()
@@ -96,9 +96,9 @@ namespace ILRuntime.Runtime.Enviorment
             return type.MakeByRefType();
         }
 
-        public IType MakeArrayType()
+        public IType MakeArrayType(int rank)
         {
-            return type.MakeArrayType();
+            return type.MakeArrayType(rank);
         }
 
         public IType FindGenericArgument(string key)
@@ -180,6 +180,14 @@ namespace ILRuntime.Runtime.Enviorment
             }
         }
 
+        public bool IsPrimitive
+        {
+            get
+            {
+                return type.IsPrimitive;
+            }
+        }
+
         public bool IsDelegate
         {
             get
@@ -230,6 +238,11 @@ namespace ILRuntime.Runtime.Enviorment
         public bool IsArray
         {
             get { return false; }
+        }
+
+        public int ArrayRank
+        {
+            get { return type.ArrayRank; }
         }
         #endregion
     }

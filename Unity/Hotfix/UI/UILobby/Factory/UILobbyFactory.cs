@@ -1,29 +1,36 @@
 ﻿using System;
-using Model;
+using ETModel;
 using UnityEngine;
 
-namespace Hotfix
+namespace ETHotfix
 {
-    [UIFactory((int)UIType.Lobby)]
+    [UIFactory(UIType.UILobby)]
     public class UILobbyFactory : IUIFactory
     {
-        public UI Create(Scene scene, UIType type, GameObject gameObject)
+        public UI Create(Scene scene, string type, GameObject gameObject)
         {
 	        try
 	        {
-				GameObject bundleGameObject = ((GameObject)Resources.Load("UI")).Get<GameObject>("UILobby");
+				ResourcesComponent resourcesComponent = ETModel.Game.Scene.GetComponent<ResourcesComponent>();
+		        resourcesComponent.LoadBundle($"{type}.unity3d");
+				GameObject bundleGameObject = (GameObject)resourcesComponent.GetAsset($"{type}.unity3d", $"{type}");
 				GameObject lobby = UnityEngine.Object.Instantiate(bundleGameObject);
 				lobby.layer = LayerMask.NameToLayer(LayerNames.UI);
-				UI ui = new UI(scene, type, null, lobby);
+				UI ui = ComponentFactory.Create<UI, GameObject>(lobby);
 
 				ui.AddComponent<UILobbyComponent>();
 				return ui;
 	        }
 	        catch (Exception e)
 	        {
-				Log.Error(e.ToStr());
+				Log.Error(e.ToString());
 		        return null;
 	        }
+		}
+
+	    public void Remove(string type)
+	    {
+			ETModel.Game.Scene.GetComponent<ResourcesComponent>().UnloadBundle($"{type}.unity3d");
 		}
     }
 }

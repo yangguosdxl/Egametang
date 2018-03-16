@@ -1,17 +1,26 @@
-﻿namespace Hotfix
+﻿using ETModel;
+
+namespace ETHotfix
 {
 	public abstract class Disposer : Object, IDisposable2
 	{
-		public long Id { get; set; }
-
-		protected Disposer()
-		{
-			ObjectEvents.Instance.Add(this);
-		}
+		public bool IsFromPool { get; set; }
+		
+		public bool IsDisposed { get; set; }
 
 		public virtual void Dispose()
 		{
-			this.Id = 0;
+			if (this.IsDisposed)
+			{
+				return;
+			}
+
+			this.IsDisposed = true;
+
+			if (this.IsFromPool)
+			{
+				Game.ObjectPool.Recycle(this);
+			}
 		}
 	}
 }

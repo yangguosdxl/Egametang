@@ -1,5 +1,5 @@
 #!/bin/bash
-xbuild ./Server/Server.sln
+dotnet msbuild ./Server/Server.sln
 cd Bin
 cmake ../
 make

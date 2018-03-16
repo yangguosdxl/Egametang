@@ -1,104 +1,37 @@
 ﻿using System;
-using System.IO;
-using System.Text;
 
-namespace Model
+namespace ETModel
 {
 	public static class Log
 	{
-		private static readonly StreamWriter info;
-
-		private static readonly StreamWriter error;
-		
-#if UNITY_EDITOR
-		private static bool IsNeedFlush = true;
-#else
-		private static bool IsNeedFlush = true;
-#endif
-
-		static Log()
+		public static void Trace(string msg)
 		{
-			if (!Directory.Exists("./Logs"))
-			{
-				Directory.CreateDirectory("./Logs");
-			}
-			info = new StreamWriter("./Logs/Log-Client-Info.txt", false, Encoding.Unicode, 1024);
-			error = new StreamWriter("./Logs/Log-Client-Error.txt", false, Encoding.Unicode, 1024);
+			UnityEngine.Debug.Log(msg);
 		}
 
 		public static void Warning(string msg)
 		{
-			DateTime dateTime = DateTime.Now;
-			string s = $"{dateTime:yyyy-MM-dd HH:mm:ss} {msg}";
-
-			info.WriteLine(s);
-			if (IsNeedFlush)
-			{
-				info.Flush();
-			}
-
-#if UNITY_EDITOR
-			UnityEngine.Debug.LogWarning(s);
-#endif
+			UnityEngine.Debug.LogWarning(msg);
 		}
 
 		public static void Info(string msg)
 		{
-			DateTime dateTime = DateTime.Now;
-			string s = $"{dateTime:yyyy-MM-dd HH:mm:ss} {msg}";
+			UnityEngine.Debug.Log(msg);
+		}
 
-			info.WriteLine(s);
-			if (IsNeedFlush)
-			{
-				info.Flush();
-			}
-
-#if UNITY_EDITOR
-			UnityEngine.Debug.Log(s);
-#endif
+		public static void Error(Exception e)
+		{
+			UnityEngine.Debug.LogError(e.ToString());
 		}
 
 		public static void Error(string msg)
 		{
-			DateTime dateTime = DateTime.Now;
-			string s = $"{dateTime:yyyy-MM-dd HH:mm:ss} {TimeHelper.ClientNow()} {msg}";
-
-			error.WriteLine(s);
-			if (IsNeedFlush)
-			{
-				error.Flush();
-			}
-
-			info.WriteLine(s);
-			if (IsNeedFlush)
-			{
-				info.Flush();
-			}
-
-#if UNITY_EDITOR
-			UnityEngine.Debug.LogError(s);
-#endif
+			UnityEngine.Debug.LogError(msg);
 		}
 
 		public static void Debug(string msg)
 		{
-#if UNITY_EDITOR
-			DateTime dateTime = DateTime.Now;
-			string s = $"{dateTime:yyyy-MM-dd HH:mm:ss} {TimeHelper.ClientNow()} {msg}";
-			UnityEngine.Debug.Log(s);
-
-			info.WriteLine(s);
-			if (IsNeedFlush)
-			{
-				info.Flush();
-			}
-#endif
-		}
-
-		public static void Flush()
-		{
-			info.Flush();
-			error.Flush();
+			UnityEngine.Debug.Log(msg);
 		}
 	}
 }

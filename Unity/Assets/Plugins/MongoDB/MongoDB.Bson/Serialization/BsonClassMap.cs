@@ -1277,10 +1277,10 @@ namespace MongoDB.Bson.Serialization
                 ConstructorInfo defaultConstructor = classTypeInfo.GetConstructors(bindingFlags)
                     .Where(c => c.GetParameters().Length == 0)
                     .SingleOrDefault();
-                #if AOT
+#if ENABLE_IL2CPP
                 _creator = () => defaultConstructor.Invoke(null);
-                #else
-                if (defaultConstructor != null)
+#else
+				if (defaultConstructor != null)
                 {
                     // lambdaExpression = () => (object) new TClass()
                     body = Expression.New(defaultConstructor);
@@ -1298,7 +1298,7 @@ namespace MongoDB.Bson.Serialization
 
                 var lambdaExpression = Expression.Lambda<Func<object>>(body);
                 _creator = lambdaExpression.Compile();
-                #endif
+#endif
             }
             return _creator;
         }
